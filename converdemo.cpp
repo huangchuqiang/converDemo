@@ -17,53 +17,18 @@ converDemo::~converDemo()
 }
 
 
-VOID Example_GetBlend(HDC hdc)
+VOID Example_GetImage(HDC hdc)
 {
 	Graphics graphics(hdc);
 
-	// Create a path that consists of a single ellipse.
-	GraphicsPath path;
-	path.AddEllipse(0, 0, 200, 100);
-	path.AddRectangle(Rect(100, 100, 250, 300));
+	// Create a texture brush, and use it to fill an ellipse.
+	Image image(L"D:\\HELLO.jpg");
+	TextureBrush textureBrush(&image);
+	graphics.FillEllipse(&textureBrush, 0, 0, 200, 100);
 
-	// Use the path to construct a brush.
-	PathGradientBrush pthGrBrush(&path);
-
-	// Set the color at the center of the path to blue.
-	pthGrBrush.SetCenterColor(Color(255, 0, 255, 255));
-
-	// Set the color along the entire boundary of the path to aqua.
-	Color colors[] = {Color(255, 0, 0, 255)};
-	INT count = 1;
-	pthGrBrush.SetSurroundColors(colors, &count);
-
-	// Set blend factors and positions for the path gradient brush.
-	REAL fac[] = {
-		0.0f, 
-		0.4f,     // 40 percent of the way from aqua to blue
-		0.8f,     // 80 percent of the way from aqua to blue
-		1.0f};
-
-		REAL pos[] = {
-			0.0f, 
-			0.3f,   // 30 percent of the way from the boundary to the center
-			0.7f,   // 70 percent of the way from the boundary to the center
-			1.0f};
-
-			pthGrBrush.SetBlend(fac, pos, 4);
-
-			// Fill the ellipse with the path gradient brush.
-			//graphics.FillEllipse(&pthGrBrush, 0, 0, 200, 100);
-			graphics.FillPath(&pthGrBrush, &path);
-
-			// Obtain information about the path gradient brush.
-			INT blendCount = pthGrBrush.GetBlendCount();
-			REAL* factors = new REAL[blendCount];
-			REAL* positions = new REAL[blendCount];
-
-			pthGrBrush.GetBlend(factors, positions, blendCount);
-			delete [] factors;
-			delete [] positions; 
+	// Get the brush's image, and draw that image.
+	Image* pImage = textureBrush.GetImage();
+	graphics.DrawImage(pImage, 10, 150);
 }
 
 
@@ -72,12 +37,12 @@ void converDemo::paintEvent( QPaintEvent *event)
 	
 	QPainter painter(this);
 	HDC hdc = painter.paintEngine()->getDC();
-// 	drawOnGDIplus(hdc);
-// 	painter.paintEngine()->releaseDC(hdc);
-// 
-// 	painter.translate(420, 20);
-// 	drawOnQT(painter);
-	Example_GetBlend(hdc);
+ 	drawOnGDIplus(hdc);
+ 	painter.paintEngine()->releaseDC(hdc);
+ 
+ 	painter.translate(420, 20);
+ 	drawOnQT(painter);
+	Example_GetImage(hdc);
 
 
 }
@@ -103,9 +68,10 @@ void converDemo::drawOnGDIplus(const HDC &hdc)
 
 QBrush newLineGradientBrush()
 {
-	QLinearGradient gradientBrush(QPointF(0, 0), QPointF(500, 500));
+	QLinearGradient gradientBrush(QPointF(0, 0), QPointF(200, 400));
 	gradientBrush.setColorAt(0, QColor(Qt::red));
-	gradientBrush.setColorAt(0.5, QColor(Qt::green));
+	gradientBrush.setColorAt(0.2, QColor(Qt::white));
+	gradientBrush.setColorAt(0.7, QColor(Qt::black));
 	gradientBrush.setColorAt(1, QColor(Qt::blue));
 	QBrush brush(gradientBrush);
 	QTransform transform;
@@ -117,42 +83,66 @@ QBrush newLineGradientBrush()
 	return brush;
 }
 
+QBrush newPathGradientBrush()
+{
+	QPainterPath path;
+	path.addEllipse(QPointF(10, 10), 100, 100);
+	path.addRect(100, 100, 200, 250);
+	QPathGradient pathGradient(path);
+	pathGradient.setColorAt(0, QColor(255, 0, 0));
+	pathGradient.setColorAt(0.5, QColor(0, 255, 0));
+	pathGradient.setColorAt(0.8,QColor(Qt::black));
+	pathGradient.setColorAt(1, QColor(0, 0, 255));
+	QBrush brush(pathGradient);
+	QTransform transform;
+	transform.translate(100, 0);
+	transform.shear(0.15, 0.10);
+	transform.scale(10, 5.2);
+	transform.rotate(0.5);
+	brush.setTransform(transform);
+	return brush;
+}
+
 //原生GDI+ 绘制
 void converDemo::drawOnNativeGdi(Graphics &graphics)
 {
 
-	Color color1, color2;
-	LinearGradientBrush brush(PointF(0, 0), PointF(500, 500), color1, color2);
-	brush.SetWrapMode(WrapModeTileFlipXY);
+	GraphicsPath path;
+	path.AddEllipse(10, 10, 100, 100);
+	path.AddRectangle(RectF(100, 100, 200, 250));
+	PathGradientBrush* brush = new PathGradientBrush(&path);
 	Color colors[] = {
-		Color(255, 255, 0, 0), Color(255, 0, 255, 0), Color(255, 0, 0, 255)
+		Color(0, 0, 255), Color(0, 0, 0), Color(0, 255, 0), Color(255, 0, 0)
 	};
 	REAL reals[] = {
-		0, 0.5, 1
+		0, 0.5, 0.8, 1
 	};
-	brush.SetInterpolationColors(colors, reals, 3);
-	QTransform transform;
-	transform.translate(100, 0);
-	transform.shear(0.15, 0.3);
-	transform.scale(0.4, 0.2);
-	transform.rotate(0.5);
+	brush->SetInterpolationColors(colors, reals, 4);
 	Matrix matrix;
-	converQTransform2GpMatrix(transform, &matrix);
-	brush.MultiplyTransform(&matrix, MatrixOrderAppend);
-	RectF rect(0.0f, 0.0f, 200.0f, 400.0f);
-	graphics.FillRectangle(&brush, rect);
+	matrix.Translate(100, 0);
+	matrix.Shear(0.15, 0.3);
+	matrix.Scale(0.4, 0.2);
+	matrix.Rotate(0.5);
+//	brush->MultiplyTransform(&matrix, MatrixOrderAppend);
+	RectF rect(convertQRectF2GpRectF(QRectF(0.0f, 0.0f, 200.0f, 400.0f)));
+	graphics.FillRectangle(brush, rect);
+	delete brush;
+
 }
 
 
 //QT绘制
 void converDemo::drawOnQT(QPainter &painter)
 {
-	QPointF p1(10, 10), p2(10, 200);
-	painter.setBrush(newLineGradientBrush());
-	painter.setPen(QColor(100, 210, 207.5, 100));
-	QRect rect(0.0f, 0.0f, 200.0f, 400.0f);
-//	painter.drawLine(p1, p2);
-	painter.drawRect(rect);
+// 	QPointF p1(10, 10), p2(10, 200);
+// 	painter.setBrush(newPathGradientBrush());
+// 	painter.setPen(QColor(100, 210, 207.5, 100));
+// 	QRect rect(0.0f, 0.0f, 200.0f, 400.0f);
+// //	painter.drawLine(p1, p2);
+// 	painter.drawRect(rect);
+	QImage qimage("D:\\HELLO.jpg");
+	QVector<QRgb> vecColorTable(qimage.colorTable());
+	painter.drawImage(QPointF(0, 0), qimage);
 }
 //QT转成GDI+绘制
 void converDemo::drawOnTranslateQT(Graphics &graphics)
@@ -162,7 +152,7 @@ void converDemo::drawOnTranslateQT(Graphics &graphics)
 	convertQColor2GpColor(qcolor, &color);
 
 	RectF rect(convertQRectF2GpRectF(QRectF(0.0f, 0.0f, 200.0f, 400.0f)));
-	Brush* brush = convertQBrush2GpBrush(newLineGradientBrush());
+	Brush* brush = convertQBrush2GpBrush(newPathGradientBrush());
 	graphics.FillRectangle(brush, rect);
 	delete brush;
 }

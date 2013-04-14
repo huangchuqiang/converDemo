@@ -4,7 +4,7 @@
 #include <GdiPlus.h>
 using namespace Gdiplus;
 
-//#include <QGradientStop>
+#include<functional>
 
 #ifdef Q_OS_WIN
 
@@ -74,23 +74,23 @@ Color convertQColor2GpColor(const QColor &qColor)
  }
 //-------------------------------------------------------------------------
 // QTransform 转换成 Matrix,原本想把 QMatrix 转成 Matrix的，不过QT文档说QMatrix是过时的类
-inline void converQTransform2GpMatrix(const QTransform &qTransform, OUT Matrix *pMatrix)
+inline void converQTransform2GpMatrix(const QTransform &qTransform, OUT Matrix* pMatrix)
 {
 	Q_ASSERT(pMatrix);
 
 	pMatrix->SetElements(qTransform.m11(), qTransform.m12(), qTransform.m21(), qTransform.m22(), qTransform.dx(), qTransform.dy());
 }
- /*
- //因为 Matrix的复制构造函数为私有的，所以下面的转换函数不可以使用
- Matrix converQTransform2GpMatrix(const QTransform &qTransform)
+ 
+ Matrix* converQTransform2GpMatrix(const QTransform &qTransform)
  {
-	Matrix matrix;
-	matrix.Translate(qTransform.dx(), qTransform.dy());
-	matrix.Shear(qTransform.m21(), qTransform.m12());
-	matrix.Scale(qTransform.m11(), qTransform.m22());
+	Matrix* matrix = new Matrix;
+
+	Q_ASSERT(matrix);
+	matrix->Translate(qTransform.dx(), qTransform.dy());
+	matrix->Shear(qTransform.m21(), qTransform.m12());
+	matrix->Scale(qTransform.m11(), qTransform.m22());
 	return matrix;
- }
- */
+ } 
 //------------------------------------------------------------------------
 inline HatchStyle getHatchStyle(Qt::BrushStyle style)
 {
@@ -128,10 +128,47 @@ inline HatchStyle getHatchStyle(Qt::BrushStyle style)
 	return HatchStyleHorizontal;
 }
 
+typedef std::function<void((const QGradientStops &, Color* , REAL* , const int &))> fnPtr;
+template<class T>
+inline void setGradientBrushInterpolationColors(
+			QGradientStops &gradientStops, T* pGradientBrush, fnPtr fnConverOperator)
+{
+	int itemsCount = gradientStops.count();
+	Q_ASSERT(itemsCount);
+	Color* colors = new Color[itemsCount];
+	REAL* reals = new REAL[itemsCount];
 
+	Q_ASSERT(colors);
+	Q_ASSERT(reals);
+	Q_ASSERT(fnConverOperator);
+
+	fnConverOperator(gradientStops, colors, reals, itemsCount);
+	pGradientBrush->SetInterpolationColors(colors, reals, itemsCount);
+
+	delete [] colors;
+	delete [] reals;
+}
+
+//与函数newPathGradientBrush的颜色复制不同的部分
+inline void fnLinearGradientOperation(
+	const QGradientStops &gradientStops, Color* colors, REAL* reals, const int &itemsCount)
+{
+	Q_ASSERT(colors);
+	Q_ASSERT(reals);
+	Q_ASSERT(itemsCount);
+
+	int index = 0;
+	for (auto iter = gradientStops.begin(); iter != gradientStops.end(); ++iter)
+	{
+		convertQColor2GpColor(iter->second, &colors[index]);
+		reals[index] = iter->first;
+		++index;
+	}
+}
 inline LinearGradientBrush* newLineGradientBrush(const QBrush &qBrush)
 {
 	QGradient* qgradient = const_cast<QGradient*>(qBrush.gradient());
+	Q_ASSERT(qgradient);
 	QLinearGradient* qlineGradinet = static_cast<QLinearGradient*>(qgradient);
 	Q_ASSERT(qlineGradinet);
 
@@ -140,43 +177,82 @@ inline LinearGradientBrush* newLineGradientBrush(const QBrush &qBrush)
 		pointStop(convertQPointF2GpPointF(qlineGradinet->finalStop()));
 	//初始化两种空颜色
 	Color colorStart, colorStop;
-	LinearGradientBrush* brush = new LinearGradientBrush(pointSart, pointStop, colorStart, colorStop);
-	brush->SetWrapMode(WrapModeTileFlipXY);
-	QGradientStops gradientStops = qgradient->stops();
-	int itemsCount = gradientStops.count();
-	Q_ASSERT(itemsCount);
-	Color* colors = new Color[itemsCount];
-	REAL* reals = new REAL[itemsCount];
-	Q_ASSERT(colors);
-	Q_ASSERT(reals);
-
-	int index =0;
-	for (auto iter = gradientStops.begin(); iter != gradientStops.end(); ++iter)
-	{
-		convertQColor2GpColor(iter->second, &colors[index]);
-		reals[index] = iter->first;
-		++index;
-	}
-	brush->SetInterpolationColors(colors, reals, itemsCount);
-	delete [] colors;
-	delete [] reals;
+	LinearGradientBrush* retLinearGrBrush = new LinearGradientBrush(
+								pointSart, pointStop, colorStart, colorStop);
+	retLinearGrBrush->SetWrapMode(WrapModeTileFlipXY);
+	setGradientBrushInterpolationColors(qlineGradinet->stops(), retLinearGrBrush, fnLinearGradientOperation);
 
 	Matrix matrix;
 	converQTransform2GpMatrix(qBrush.transform(), &matrix);
-	brush->MultiplyTransform(&matrix, MatrixOrderAppend);
-	return brush;
+	retLinearGrBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+	return retLinearGrBrush;
 }
 
-inline PathGradientBrush * newPathGradientBrush(const QBrush &qBrush)
+//与函数newLineGradientBrush的颜色复制不同的部分
+inline void fnPathGradientOperation(
+	const QGradientStops &gradientStops, Color* colors, REAL* reals, const int &itemsCount)
+{
+	Q_ASSERT(colors);
+	Q_ASSERT(reals);
+	Q_ASSERT(itemsCount);
+
+	int index = itemsCount;
+	for (auto iter = gradientStops.begin(); iter != gradientStops.end(); ++iter)
+	{
+		--index;
+		convertQColor2GpColor(iter->second, &colors[index]);
+		reals[index] = 1 - iter->first;
+	}
+}
+
+inline PathGradientBrush* newPathGradientBrush(const QBrush &qBrush)
 {
 	QGradient* qgradient = const_cast<QGradient*>(qBrush.gradient());
+	Q_ASSERT(qgradient);
 	QPathGradient* qpathGradinet = static_cast<QPathGradient*>(qgradient);
 	Q_ASSERT(qpathGradinet);
-	//qpathGradinet
-	return NULL;
-
+	QPainterPath qpath = qpathGradinet->path();
+	GraphicsPath* gpath = createGpPath(qpath);		//返回一个new的GraphicsPath对象
+	PathGradientBrush* retPathGrBrush = new PathGradientBrush(gpath);
+	retPathGrBrush->SetWrapMode(WrapModeTileFlipXY);
+	setGradientBrushInterpolationColors(qpathGradinet->stops(), retPathGrBrush, fnPathGradientOperation);
+//	下面的代码已经拆分为setGradientBrushInterpolationColors 和fnPathGradientOperation两个方法
+// 	QGradientStops gradientStops(qpathGradinet->stops());
+// 	int itemsCount = gradientStops.count();
+// 	Q_ASSERT(itemsCount);
+// 	Color* colors = new Color[itemsCount];
+// 	REAL* reals = new REAL[itemsCount];
+// 	Q_ASSERT(colors);
+// 	Q_ASSERT(reals);
+// 
+// 	int index = itemsCount;
+// 	for (auto iter = gradientStops.begin(); iter != gradientStops.end(); ++iter)
+// 	{
+// 		--index;
+// 		convertQColor2GpColor(iter->second, &colors[index]);
+// 		reals[index] = 1 - iter->first;
+// 	}
+// 
+// 	retPathGrBrush->SetInterpolationColors(colors, reals, itemsCount);
+// 
+// 	delete [] colors;
+// 	delete [] reals;
+	Matrix matrix;
+	converQTransform2GpMatrix(qBrush.transform(), &matrix);
+	retPathGrBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+	delete gpath;
+	return retPathGrBrush;
 }
 
+inline TextureBrush* newTexturePatternBrush(const QBrush &qBrush)
+{
+	
+	   return NULL;
+}
+
+/*
+ @remark convertQBrush2GpBrush方法没有对 ConicalGradientPattern 类型和 RadialGradientPattern 类型进行转换
+*/
 Brush* convertQBrush2GpBrush(const QBrush &qBrush)
 {
 	Qt::BrushStyle style = qBrush.style();
@@ -194,15 +270,18 @@ Brush* convertQBrush2GpBrush(const QBrush &qBrush)
 			case Qt::NoBrush:
 				Q_ASSERT(false);
 			case Qt::SolidPattern:  
-				return (new SolidBrush(convertQColor2GpColor(qBrush.color())));	
+				return (new SolidBrush(convertQColor2GpColor(qBrush.color())));
 			case Qt::LinearGradientPattern:
 				return newLineGradientBrush(qBrush);
 			case Qt::ConicalGradientPattern:
 			case Qt::RadialGradientPattern:
+				Q_ASSERT(false);
+				qWarning("have not conver this style");
+				return NULL;
 			case Qt::PathGradientPattern:
 				return newPathGradientBrush(qBrush);
 			case Qt::TexturePattern:
-				return NULL;
+				return newTexturePatternBrush(qBrush);
 			default:
 				Q_ASSERT(false);
 		} 
