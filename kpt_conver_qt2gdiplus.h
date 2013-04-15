@@ -153,6 +153,14 @@ public:
 	}
 };
 //-------------------------------------------------------------------------
+template<class T>
+inline void addMatrix(const QBrush &qBrush, T* pbrush)
+{
+	Matrix matrix;
+	converQTransform2GpMatrix(qBrush.transform(), &matrix);
+	pbrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+}
+
 inline HatchStyle getHatchStyle(Qt::BrushStyle style)
 {
 	switch(style)
@@ -243,9 +251,10 @@ inline LinearGradientBrush* newLineGradientBrush(const QBrush &qBrush)
 	retLinearGrBrush->SetWrapMode(WrapModeTileFlipXY);
 	setGradientBrushInterpolationColors(qlineGradinet->stops(), retLinearGrBrush, fnLinearGradientOperation);
 
-	Matrix matrix;
-	converQTransform2GpMatrix(qBrush.transform(), &matrix);
-	retLinearGrBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+// 	Matrix matrix;
+// 	converQTransform2GpMatrix(qBrush.transform(), &matrix);
+// 	retLinearGrBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+	addMatrix(qBrush, retLinearGrBrush);
 	return retLinearGrBrush;
 }
 
@@ -298,9 +307,11 @@ inline PathGradientBrush* newPathGradientBrush(const QBrush &qBrush)
 // 
 // 	delete [] colors;
 // 	delete [] reals;
-	Matrix matrix;
-	converQTransform2GpMatrix(qBrush.transform(), &matrix);
-	retPathGrBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+
+// 	Matrix matrix;
+// 	converQTransform2GpMatrix(qBrush.transform(), &matrix);
+// 	retPathGrBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+	addMatrix(qBrush, retPathGrBrush);
 	delete gpath;
 	return retPathGrBrush;
 }
@@ -311,9 +322,10 @@ inline TextureBrush* newTexturePatternBrush(const QBrush &qBrush)
 	KConverQImage2GpImage converQImage2GpImage;
 	Image* image = converQImage2GpImage(qBrush.textureImage());
 	TextureBrush* retTextureBrush = new TextureBrush(image);
-	Matrix matrix;
-	converQTransform2GpMatrix(qBrush.transform(), &matrix);
-	retTextureBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+// 	Matrix matrix;
+// 	converQTransform2GpMatrix(qBrush.transform(), &matrix);
+// 	retTextureBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+	addMatrix(qBrush, retTextureBrush);
 	return retTextureBrush;
 }
 
