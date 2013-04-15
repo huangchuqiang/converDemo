@@ -42,7 +42,7 @@ void converDemo::paintEvent( QPaintEvent *event)
  
  	painter.translate(420, 20);
  	drawOnQT(painter);
-	Example_GetImage(hdc);
+	//Example_GetImage(hdc);
 
 
 }
@@ -130,6 +130,10 @@ void converDemo::drawOnNativeGdi(Graphics &graphics)
 
 }
 
+QImage creatQImage()
+{
+	return QImage("D:\\HELLO.jpg");
+}
 
 //QTªÊ÷∆
 void converDemo::drawOnQT(QPainter &painter)
@@ -140,7 +144,7 @@ void converDemo::drawOnQT(QPainter &painter)
 // 	QRect rect(0.0f, 0.0f, 200.0f, 400.0f);
 // //	painter.drawLine(p1, p2);
 // 	painter.drawRect(rect);
-	QImage qimage("D:\\HELLO.jpg");
+	QImage qimage(creatQImage());
 	QVector<QRgb> vecColorTable(qimage.colorTable());
 	painter.drawImage(QPointF(0, 0), qimage);
 }
@@ -155,4 +159,9 @@ void converDemo::drawOnTranslateQT(Graphics &graphics)
 	Brush* brush = convertQBrush2GpBrush(newPathGradientBrush());
 	graphics.FillRectangle(brush, rect);
 	delete brush;
+
+	Image* image = converQImage2GpImage(creatQImage());
+	TextureBrush textureBrush(image);
+	graphics.FillEllipse(&textureBrush, 0, 0, 200, 100);
+	delete image;
 }
