@@ -1,3 +1,6 @@
+#ifndef KPT_CONVER_QT2GDIPLUS_H__
+#define KPT_CONVER_QT2GDIPLUS_H__
+
 #include "converdemo.h"
 #include <windows.h>
 #include <gdiplus.h>
@@ -10,7 +13,7 @@ using namespace Gdiplus;
 
 KPT_BEGIN_NAMESPACE	
 //-------------------------------------------------------------------------
-// µãµÄ×ª»»
+// ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 void convertQPointF2GpPointF(const QPointF &qPoint, OUT PointF* pPoint)
 {
 	Q_ASSERT(NULL == pPoint); 
@@ -22,11 +25,11 @@ PointF 	convertQPointF2GpPointF(const QPointF &qPoint)
 	return PointF(qPoint.x(), qPoint.y());
 }
 //-------------------------------------------------------------------------
-// ¾ØÐÎµÄ×ª»»
+// ï¿½ï¿½ï¿½Îµï¿½×ªï¿½ï¿½
 void convertQRectF2GpRectF(const QRectF &qRect, OUT RectF* pRect)
 {
 	Q_ASSERT(NULL == pRect);
-	//³õÊ¼»¯
+	//ï¿½ï¿½Ê¼ï¿½ï¿½
 	qreal x(0), y(0), width(0), height(0);
 	qRect.getCoords(&x, &y, &width, &height);
 	pRect->X = x;
@@ -36,23 +39,23 @@ void convertQRectF2GpRectF(const QRectF &qRect, OUT RectF* pRect)
 }
 RectF convertQRectF2GpRectF(const QRectF &qRect)
 {
-	//³õÊ¼»¯
+	//ï¿½ï¿½Ê¼ï¿½ï¿½
 	qreal x(0), y(0), width(0), height(0);
 	qRect.getCoords(&x, &y, &width, &height);
 	return RectF(x, y, width, height);
 }
 //-------------------------------------------------------------------------
-//ÑÕÉ«µÄ×ª»»
+//ï¿½ï¿½É«ï¿½ï¿½×ªï¿½ï¿½
 void convertQColor2GpColor(const QColor &qColor, OUT Color* pColor)
 {
 	Q_ASSERT(pColor);
-	//³õÊ¼»¯
+	//ï¿½ï¿½Ê¼ï¿½ï¿½
 	qreal red(0), green(0), blue(0), alpha(0);
 	qColor.getRgbF(&red, &green, &blue, &alpha);
 
-	//ÒÆÎ»À´×éºÏARGBµÄÖµ
+	//ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ARGBï¿½ï¿½Öµ
 	ARGB argb = (int)(255 * alpha);
-// ÓÃÏÂÃæµÄ´úÂëµÃµ½µÄ½á¹û²»¶Ô
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½Ä½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // 	argb = argb << 8 + (int)(255 * red);
 // 	argb = argb << 8 + (int)(255 * green);
 // 	argb = argb << 8 + (int)(255 * blue);
@@ -67,13 +70,13 @@ void convertQColor2GpColor(const QColor &qColor, OUT Color* pColor)
 }
 Color convertQColor2GpColor(const QColor &qColor)
  {
-	//³õÊ¼»¯
+	//ï¿½ï¿½Ê¼ï¿½ï¿½
 	qreal red(0), green(0), blue(0), alpha(0);
 	qColor.getRgbF(&red, &green, &blue, &alpha);
 	return Color(255 * alpha, 255 * red, 255 * green, 255 * blue);
  }
 //-------------------------------------------------------------------------
-// QTransform ×ª»»³É Matrix,Ô­±¾Ïë°Ñ QMatrix ×ª³É MatrixµÄ£¬²»¹ýQTÎÄµµËµQMatrixÊÇ¹ýÊ±µÄÀà
+// QTransform ×ªï¿½ï¿½ï¿½ï¿½ Matrix,Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ QMatrix ×ªï¿½ï¿½ Matrixï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½QTï¿½Äµï¿½ËµQMatrixï¿½Ç¹ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 inline void converQTransform2GpMatrix(const QTransform &qTransform, OUT Matrix* pMatrix)
 {
 	Q_ASSERT(pMatrix);
@@ -88,7 +91,7 @@ inline Matrix* converQTransform2GpMatrix(const QTransform &qTransform)
 	return pmatrix;
  }
 //-------------------------------------------------------------------------
-//copy ×Ô kpt_variant_image.cppÎÄ¼þ
+//copy ï¿½ï¿½ kpt_variant_image.cppï¿½Ä¼ï¿½
 Bitmap* createBmpFromQImage(const QImage &img)
 {
 	Q_ASSERT(!img.isNull());
@@ -136,8 +139,8 @@ public:
 			delete m_bitmap;
 		}
 	}
-	//ÒòÎª×ª»»ºóµÄBitmapÒªÓÃµ½QImage¶ÔÏóµÄÊý¾Ý£¬ÓÖÏë°ÑÀàµÄ·½·¨Ïñº¯ÊýÒ»ÑùÊ¹ÓÃ£¬¹ÊÓÃº¯Êý¶ÔÏó
-	//·µ»ØµÄ¶ÔÏó²»ÐèÒªÊÖ¶¯ÊÍ·Å£¬Àà»á×Ô¼ºÊÍ·Å
+	//ï¿½ï¿½Îª×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BitmapÒªï¿½Ãµï¿½QImageï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ê¹ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	//ï¿½ï¿½ï¿½ØµÄ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Ö¶ï¿½ï¿½Í·Å£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Í·ï¿½
 	Image* operator()(const QImage &qImage)
 	{
 		m_image = qImage;
@@ -220,7 +223,7 @@ inline void setGradientBrushInterpolationColors(
 	delete [] reals;
 }
 
-//Óëº¯ÊýnewPathGradientBrushµÄÑÕÉ«¸´ÖÆ²»Í¬µÄ²¿·Ö
+//ï¿½ëº¯ï¿½ï¿½newPathGradientBrushï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½Æ²ï¿½Í¬ï¿½Ä²ï¿½ï¿½ï¿½
 inline void fnLinearGradientOperation(
 	const QGradientStops &gradientStops, Color* colors, REAL* reals, const int &itemsCount)
 {
@@ -243,10 +246,10 @@ inline LinearGradientBrush* newLineGradientBrush(const QBrush &qBrush)
 	QLinearGradient* qlineGradinet = static_cast<QLinearGradient*>(qgradient);
 	Q_ASSERT(qlineGradinet);
 
-	//µÃµ½Á½¸öµãµÄ×ø±ê
+	//ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	PointF pointSart(convertQPointF2GpPointF(qlineGradinet->start())),
 		pointStop(convertQPointF2GpPointF(qlineGradinet->finalStop()));
-	//³õÊ¼»¯Á½ÖÖ¿ÕÑÕÉ«
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½Ö¿ï¿½ï¿½ï¿½É«
 	Color colorStart, colorStop;
 	LinearGradientBrush* retLinearGrBrush = new LinearGradientBrush(
 								pointSart, pointStop, colorStart, colorStop);
@@ -260,7 +263,7 @@ inline LinearGradientBrush* newLineGradientBrush(const QBrush &qBrush)
 	return retLinearGrBrush;
 }
 
-//Óëº¯ÊýnewLineGradientBrushµÄÑÕÉ«¸´ÖÆ²»Í¬µÄ²¿·Ö
+//ï¿½ëº¯ï¿½ï¿½newLineGradientBrushï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½Æ²ï¿½Í¬ï¿½Ä²ï¿½ï¿½ï¿½
 inline void fnPathGradientOperation(
 	const QGradientStops &gradientStops, Color* colors, REAL* reals, const int &itemsCount)
 {
@@ -284,11 +287,11 @@ inline PathGradientBrush* newPathGradientBrush(const QBrush &qBrush)
 	QPathGradient* qpathGradinet = static_cast<QPathGradient*>(qgradient);
 	Q_ASSERT(qpathGradinet);
 	QPainterPath qpath = qpathGradinet->path();
-	GraphicsPath* gpath = createGpPath(qpath);		//·µ»ØÒ»¸önewµÄGraphicsPath¶ÔÏó
+	GraphicsPath* gpath = createGpPath(qpath);		//ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½newï¿½ï¿½GraphicsPathï¿½ï¿½ï¿½ï¿½
 	PathGradientBrush* retPathGrBrush = new PathGradientBrush(gpath);
 	retPathGrBrush->SetWrapMode(WrapModeTileFlipXY);
 	setGradientBrushInterpolationColors(qpathGradinet->stops(), retPathGrBrush, fnPathGradientOperation);
-//	ÏÂÃæµÄ´úÂëÒÑ¾­²ð·ÖÎªsetGradientBrushInterpolationColors ºÍfnPathGradientOperationÁ½¸ö·½·¨
+//	ï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ÎªsetGradientBrushInterpolationColors ï¿½ï¿½fnPathGradientOperationï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 // 	QGradientStops gradientStops(qpathGradinet->stops());
 // 	int itemsCount = gradientStops.count();
 // 	Q_ASSERT(itemsCount);
@@ -332,7 +335,7 @@ inline TextureBrush* newTexturePatternBrush(const QBrush &qBrush)
 }
 
 /*
- @remark convertQBrush2GpBrush·½·¨Ã»ÓÐ¶Ô ConicalGradientPattern ÀàÐÍºÍ RadialGradientPattern ÀàÐÍ½øÐÐ×ª»»
+ @remark convertQBrush2GpBrushï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ð¶ï¿½ ConicalGradientPattern ï¿½ï¿½ï¿½Íºï¿½ RadialGradientPattern ï¿½ï¿½ï¿½Í½ï¿½ï¿½ï¿½×ªï¿½ï¿½
 */
 Brush* convertQBrush2GpBrush(const QBrush &qBrush)
 {
@@ -373,3 +376,5 @@ Brush* convertQBrush2GpBrush(const QBrush &qBrush)
 KPT_END_NAMESPACE
 
 #endif // Q_OS_WIN
+
+#endif //KPT_CONVER_QT2GDIPLUS_H__
