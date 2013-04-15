@@ -118,231 +118,41 @@ Bitmap* createBmpFromQImage(const QImage &img)
 
 	return pBmp;
 }
-/*
-//根据主干相同函数改写过来的：Coding\office\include\drawing\common\blipproperty.h
-void GenImgAttributes(IN const KDrawingEffects &aeffects, OUT ImageAttributes *pImAtt)
+
+class KConverQImage2GpImage
 {
-	if (!aeffects.hasEffects())
-		return;
-
-	QImageEffects effects = aeffects;
-	if (effects.hasDuotone() && effects.isGray())
+private:
+	QImage m_image;
+	Bitmap* m_bitmap;
+public:
+	KConverQImage2GpImage():m_bitmap(NULL)
 	{
-		QRgb clr1, clr2;
-		effects.getDuotone(clr1, clr2);
-		//Duotone和Gray是不会同时设置的，见GenImgEffects
-		Q_ASSERT((clr1 == kpt::Color::Black && clr2 == kpt::Color::White));
-		if ((clr1 == kpt::Color::Black && clr2 == kpt::Color::White))
+	}
+	~KConverQImage2GpImage()
+	{
+		m_image = QImage();
+		if (m_bitmap)
 		{
-			effects.unsetDuotone();
-			effects.setGray(true);
+			delete m_bitmap;
 		}
 	}
-
-	if (effects.hasSubstituteColor())
+	//因为转换后的Bitmap要用到QImage对象的数据，又想把类的方法像函数一样使用，故用函数对象
+	//返回的对象不需要手动释放，类会自己释放
+	Image* operator()(const QImage &qImage)
 	{
-		Gdiplus::Color color(effects.substituteColor());
-		Gdiplus::REAL fA = Gdiplus::REAL((double)color.GetA() / 255);
-		Gdiplus::REAL fR = Gdiplus::REAL((double)color.GetR() / 255);
-		Gdiplus::REAL fG = Gdiplus::REAL((double)color.GetG() / 255);
-		Gdiplus::REAL fB = Gdiplus::REAL((double)color.GetB() / 255);
-		Gdiplus::ColorMatrix colorMatrix =
+		m_image = qImage;
+		m_bitmap = createBmpFromQImage(qImage);
+		if (NULL == m_bitmap)
 		{
-			0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-			0.0f,  0.0f, 0.0f, 0.0f, 0.0f,
-			0.0f,  0.0f, 0.0f, 0.0f, 0.0f,
-			0.0f,  0.0f, 0.0f, fA, 0.0f,
-			fR, fG, fB, 0.0f, 1.0f};
-			pImAtt->SetColorMatrix(&colorMatrix,
-				ColorMatrixFlagsDefault,
-				ColorAdjustTypeDefault);
+			m_bitmap = createBmpFromQImage(qImage.convertToFormat(QImage::Format_ARGB32));
+		}
+
+		Q_ASSERT(m_bitmap);
+
+		return m_bitmap;
 	}
-	else
-	{
-		// 如果recolor属性enable
-		if (effects.hasRecolor())
-		{
-			Gdiplus::Color color(effects.recolor());
-			Gdiplus::REAL fA = Gdiplus::REAL((double)color.GetA() / 255);
-			Gdiplus::REAL fR = Gdiplus::REAL((double)color.GetR() / 255);
-			Gdiplus::REAL fG = Gdiplus::REAL((double)color.GetG() / 255);
-			Gdiplus::REAL fB = Gdiplus::REAL((double)color.GetB() / 255);
-
-			// ntfs weight,工业标准算法
-			float gray_r = 0.299f;
-			float gray_g = 0.587f;
-			float gray_b = 0.114f;
-
-			float coefficient_r = 1.0f - fR;
-			float coefficient_g = 1.0f - fG;
-			float coefficient_b = 1.0f - fB;
-
-			// recolor 颜色matrix
-			Gdiplus::ColorMatrix colorMatrix =
-			{
-				gray_r*coefficient_r, gray_r*coefficient_g, gray_r*coefficient_b, 0.0f, 0.0f,
-				gray_g*coefficient_r, gray_g*coefficient_g, gray_g*coefficient_b, 0.0f, 0.0f,
-				gray_b*coefficient_r, gray_b*coefficient_g, gray_b*coefficient_b, 0.0f, 0.0f,
-				0.0f,  0.0f, 0.0f, fA,  0.0f,
-				fR,    fG,    fB,   0.0f, 1.0f
-			};
-
-			pImAtt->SetColorMatrix(&colorMatrix, 
-				ColorMatrixFlagsDefault,
-				ColorAdjustTypeDefault);
-		}
-
-		// 如果recolor后，图片还有设置了亮度，对比度，那么，继续对着色后的图片应用亮度，和对比度得颜色matrix
-		// 如果recolor后，图片设置gray, 那么继续应用gray matrix
-
-		if (effects.hasAlpha())
-		{
-			Gdiplus::ColorMatrix alphaMatrix =
-				MakeColorMatrix_Alpha((BYTE)effects.alpha());
-			pImAtt->SetColorMatrix(&alphaMatrix);
-		}
-		else if (effects.hasDuotone())
-		{
-			QRgb clr1, clr2;
-			effects.getDuotone(clr1, clr2);
-			Gdiplus::ColorMatrix duotoneMatrix =
-				MakeColorMatrix_Duotone(clr1, clr2);
-			pImAtt->SetColorMatrix(&duotoneMatrix);
-		}
-		else if (effects.brightness() != 0 || effects.contrast() != 1)
-		{
-			Gdiplus::REAL propBright =effects.brightness() / 2.0;
-			Gdiplus::REAL propContrast = effects.contrast();
-
-			Gdiplus::REAL fOffset = 0.0f;
-			if (propContrast < 1.0f && propBright > 0.0f)
-			{//跟冲蚀效果相关
-				fOffset = 0.15f * (propContrast - 1.0f);
-			}
-			else
-			{// '-'号后是微软使用的调整因子----propBright * (propContrast - 1.0f)
-				fOffset = 0.5f * (propContrast - 1.0f) - propBright * (propContrast - 1.0f);
-			}
-			Gdiplus::REAL fContrast = propContrast;
-			Gdiplus::REAL fBrightness = 2.0f * propBright;
-			Gdiplus::REAL fOffsetVal = fBrightness - fOffset;
-
-			if (effects.isGray() || effects.hasBilevel())
-			{
-				Gdiplus::ColorMatrix colorMatrix =
-				{
-					0.299f*fContrast, 0.299f*fContrast, 0.299f*fContrast, 0.0f, 0.0f,
-					0.587f*fContrast, 0.587f*fContrast, 0.587f*fContrast, 0.0f, 0.0f,
-					0.114f*fContrast, 0.114f*fContrast, 0.114f*fContrast, 0.0f, 0.0f,
-					0.0f,   0.0f,   0.0f,   1.0f,   0.0f,
-					fOffsetVal,  fOffsetVal,   fOffsetVal,   0.0f, 1.0f
-				};
-				pImAtt->SetColorMatrix(&colorMatrix,
-					ColorMatrixFlagsDefault,
-					ColorAdjustTypeDefault);
-			}
-			else 
-			{
-				Gdiplus::ColorMatrix colorMatrix =
-				{
-					fContrast, 0.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, fContrast, 0.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, fContrast, 0.0f, 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-					fOffsetVal, fOffsetVal, fOffsetVal, 0.0f, 1.0f
-				};
-
-				pImAtt->SetColorMatrix(&colorMatrix,
-					ColorMatrixFlagsDefault,
-					ColorAdjustTypeDefault);
-			}
-		}
-		else if (effects.isGray() || effects.hasBilevel())
-		{
-			Gdiplus::ColorMatrix colorMatrix =
-			{
-				0.299f, 0.299f, 0.299f, 0.0f, 0.0f,
-				0.587f, 0.587f, 0.587f, 0.0f, 0.0f,
-				0.114f, 0.114f, 0.114f, 0.0f, 0.0f,
-				0.0f,   0.0f,   0.0f,   1.0f,   0.0f,
-				0.0,  0.0,   0.0,   0.0f, 1.0f
-			};
-			pImAtt->SetColorMatrix(&colorMatrix,
-				ColorMatrixFlagsDefault,
-				ColorAdjustTypeDefault);
-
-		}
-	}
-	if (effects.hasColorKey()) // 如果为~0UL，表示没有透明色（color key）
-	{
-		QRgb colorKey = effects.colorKey();
-		quint8 tolerance = effects.colorKeyTolerance();
-		//这里的值要跟Coding\office\include\drawing\common\blipproperty.h同步
-		Q_ASSERT(tolerance == 1 || tolerance == 12);
-		if (tolerance > 1) {
-			int r = max(0, qRed(colorKey) - tolerance),
-				g = max(0, qGreen(colorKey) - tolerance),
-				b = max(0, qBlue(colorKey) - tolerance);
-			Gdiplus::Color low(r, g, b);
-			r = min(r + tolerance * 2, 255), g = min(g + tolerance * 2, 255), b = min(b + tolerance * 2, 255);
-			Gdiplus::Color high(r, g, b);
-			pImAtt->SetColorKey(low, high, ColorAdjustTypeDefault);
-		} else {
-			Gdiplus::Color key(colorKey);
-			pImAtt->SetColorKey(key, key, ColorAdjustTypeDefault);
-		}
-	}
-	if (effects.hasBilevel())
-		pImAtt->SetThreshold(effects.bilevel(), Gdiplus::ColorAdjustTypeDefault);
-}
-*/
-// int   GetEncoderClsid(const   WCHAR*   format,   CLSID*   pClsid) 
-// { 
-// 	UINT     num   =   0;                     //   number   of   image   encoders 
-// 	UINT     size   =   0;                   //   size   of   the   image   encoder   array   in   bytes 
-// 
-// 	ImageCodecInfo*   pImageCodecInfo   =   NULL; 
-// 
-// 	GetImageEncodersSize(&num,   &size); 
-// 	if(size   ==   0) 
-// 		return   -1;     //   Failure 
-// 
-// 	pImageCodecInfo   =   (ImageCodecInfo*)(malloc(size)); 
-// 	if(pImageCodecInfo   ==   NULL) 
-// 		return   -1;     //   Failure 
-// 
-// 	GetImageEncoders(num,   size,   pImageCodecInfo); 
-// 
-// 	for(UINT   j   =   0;   j   <   num;   ++j) 
-// 	{ 
-// 		if(   wcscmp(pImageCodecInfo[j].MimeType,   format)   ==   0   ) 
-// 		{ 
-// 			*pClsid   =   pImageCodecInfo[j].Clsid; 
-// 			free(pImageCodecInfo); 
-// 			return   j;     //   Success 
-// 		}         
-// 	} 
-// 
-// 	free(pImageCodecInfo); 
-// 	return   -1;     //   Failure 
-// } 
-inline Image* converQImage2GpImage(const QImage &qImage)
-{
-	Bitmap* pBitmap = createBmpFromQImage(qImage);
-	if (NULL == pBitmap)
-	{
-		pBitmap = createBmpFromQImage(qImage.convertToFormat(QImage::Format_ARGB32));
-	}
-
-	Q_ASSERT(pBitmap);
-
-// 	CLSID encoderClsid;
-// 	GetEncoderClsid(L"image/jpeg",&encoderClsid);
-// 	pBitmap->Save(L"d:\\hello11.jpg",&encoderClsid);
-	return pBitmap;
-}
+};
 //-------------------------------------------------------------------------
-//------------------------------------------------------------------------
 inline HatchStyle getHatchStyle(Qt::BrushStyle style)
 {
 	switch(style)
@@ -498,7 +308,13 @@ inline PathGradientBrush* newPathGradientBrush(const QBrush &qBrush)
 inline TextureBrush* newTexturePatternBrush(const QBrush &qBrush)
 {
 	
-	   return NULL;
+	KConverQImage2GpImage converQImage2GpImage;
+	Image* image = converQImage2GpImage(qBrush.textureImage());
+	TextureBrush* retTextureBrush = new TextureBrush(image);
+	Matrix matrix;
+	converQTransform2GpMatrix(qBrush.transform(), &matrix);
+	retTextureBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+	return retTextureBrush;
 }
 
 /*

@@ -124,29 +124,31 @@ void converDemo::drawOnNativeGdi(Graphics &graphics)
 	matrix.Scale(0.4, 0.2);
 	matrix.Rotate(0.5);
 //	brush->MultiplyTransform(&matrix, MatrixOrderAppend);
-	RectF rect(convertQRectF2GpRectF(QRectF(0.0f, 0.0f, 200.0f, 400.0f)));
+	RectF rect(convertQRectF2GpRectF(QRectF(100.0f, 100.0f, 200.0f, 400.0f)));
 	graphics.FillRectangle(brush, rect);
 	delete brush;
 
 }
 
-QImage creatQImage()
+QBrush creatQTextureBrush()
 {
-	return QImage("D:\\HELLO.jpg");
+	QBrush qbrush(QImage("Penguins.jpg"));
+	QTransform transform;
+	transform.translate(10, 10);
+	transform.scale(0.30, 0.40);
+	transform.shear(0.50, 0.50);
+	transform.rotate(45);
+	qbrush.setTransform(transform);
+	return qbrush;
 }
 
 //QT绘制
 void converDemo::drawOnQT(QPainter &painter)
 {
-// 	QPointF p1(10, 10), p2(10, 200);
-// 	painter.setBrush(newPathGradientBrush());
-// 	painter.setPen(QColor(100, 210, 207.5, 100));
-// 	QRect rect(0.0f, 0.0f, 200.0f, 400.0f);
-// //	painter.drawLine(p1, p2);
-// 	painter.drawRect(rect);
-	QImage qimage(creatQImage());
-	QVector<QRgb> vecColorTable(qimage.colorTable());
-	painter.drawImage(QPointF(0, 0), qimage);
+
+	painter.setBrush(creatQTextureBrush());
+//	painter.drawImage(0, 0, painter.brush().textureImage());
+	painter.drawRect(QRectF(0, 200, 100, 400));
 }
 //QT转成GDI+绘制
 void converDemo::drawOnTranslateQT(Graphics &graphics)
@@ -160,8 +162,9 @@ void converDemo::drawOnTranslateQT(Graphics &graphics)
 	graphics.FillRectangle(brush, rect);
 	delete brush;
 
-	Image* image = converQImage2GpImage(creatQImage());
-	TextureBrush textureBrush(image);
-	graphics.FillEllipse(&textureBrush, 0, 0, 200, 100);
-	delete image;
+	brush = convertQBrush2GpBrush(creatQTextureBrush());
+// 	Image* image = ((TextureBrush*)brush)->GetImage();
+// 	graphics.DrawImage(image, 0, 0, image->GetWidth(), image->GetHeight());
+	graphics.FillRectangle(brush, RectF(0, 200, 100, 400));
+	delete brush;
 }
