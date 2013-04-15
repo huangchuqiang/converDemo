@@ -17,19 +17,6 @@ converDemo::~converDemo()
 }
 
 
-VOID Example_GetImage(HDC hdc)
-{
-	Graphics graphics(hdc);
-
-	// Create a texture brush, and use it to fill an ellipse.
-	Image image(L"D:\\HELLO.jpg");
-	TextureBrush textureBrush(&image);
-	graphics.FillEllipse(&textureBrush, 0, 0, 200, 100);
-
-	// Get the brush's image, and draw that image.
-	Image* pImage = textureBrush.GetImage();
-	graphics.DrawImage(pImage, 10, 150);
-}
 
 
 void converDemo::paintEvent( QPaintEvent *event)
@@ -42,9 +29,6 @@ void converDemo::paintEvent( QPaintEvent *event)
  
  	painter.translate(420, 20);
  	drawOnQT(painter);
-	//Example_GetImage(hdc);
-
-
 }
 
 void converDemo::drawOnGDIplus(const HDC &hdc)

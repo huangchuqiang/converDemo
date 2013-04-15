@@ -120,6 +120,7 @@
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_converdemo.h" />
     <ClInclude Include="kpt_conver_qt2gdiplus.h" />
+    <ClInclude Include="kpt_gdiplusfromqt.h" />
     <ClInclude Include="kpt_widen_path.h" />
   </ItemGroup>
   <ItemGroup>

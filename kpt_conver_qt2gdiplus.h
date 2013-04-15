@@ -1,3 +1,6 @@
+#ifndef KPT_CONVER_QT2GDIPLUS_H__
+#define KPT_CONVER_QT2GDIPLUS_H__
+
 #include "converdemo.h"
 #include <windows.h>
 #include <gdiplus.h>
@@ -373,3 +376,5 @@ Brush* convertQBrush2GpBrush(const QBrush &qBrush)
 KPT_END_NAMESPACE
 
 #endif // Q_OS_WIN
+#endif //KPT_CONVER_QT2GDIPLUS_H__
+

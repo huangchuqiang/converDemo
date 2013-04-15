@@ -72,5 +72,8 @@
     <ClInclude Include="kpt_widen_path.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="kpt_gdiplusfromqt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
