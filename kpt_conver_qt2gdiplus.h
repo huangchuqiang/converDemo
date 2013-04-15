@@ -154,11 +154,13 @@ public:
 };
 //-------------------------------------------------------------------------
 template<class T>
-inline void addMatrix(const QBrush &qBrush, T* pbrush)
+inline void addMatrix(const QBrush &qBrush, T* pBrush)
 {
+	Q_ASSERT(pBrush);
+
 	Matrix matrix;
 	converQTransform2GpMatrix(qBrush.transform(), &matrix);
-	pbrush->MultiplyTransform(&matrix, MatrixOrderAppend);
+	pBrush->MultiplyTransform(&matrix, MatrixOrderAppend);
 }
 
 inline HatchStyle getHatchStyle(Qt::BrushStyle style)
