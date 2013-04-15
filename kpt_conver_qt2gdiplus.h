@@ -16,7 +16,7 @@ KPT_BEGIN_NAMESPACE
 // 点的转换
 void convertQPointF2GpPointF(const QPointF &qPoint, OUT PointF* pPoint)
 {
-	Q_ASSERT(NULL == pPoint); 
+	Q_ASSERT(pPoint); 
 	pPoint->X = qPoint.x();
 	pPoint->Y = qPoint.y();
 }
@@ -28,7 +28,7 @@ PointF 	convertQPointF2GpPointF(const QPointF &qPoint)
 // 矩形的转换
 void convertQRectF2GpRectF(const QRectF &qRect, OUT RectF* pRect)
 {
-	Q_ASSERT(NULL == pRect);
+	Q_ASSERT(pRect);
 	//初始化
 	qreal x(0), y(0), width(0), height(0);
 	qRect.getCoords(&x, &y, &width, &height);
